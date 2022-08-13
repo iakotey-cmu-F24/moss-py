@@ -88,3 +88,36 @@ class MossParams( ABC ):
         pass
 
 
+class PathBasedParams( MossParams ):
+
+    ''' Implementation of moss parameters that uses file paths
+        This implementation tries to ensure the validity
+        of file paths passed
+    '''
+
+    def __init__( self ) -> None:
+        super().__init__()
+        self.__base_files: list[ PathType ] = []
+        self.__submission_files: list[ PathType ] = []
+
+    def add_base_file( self, base_file: PathType ):
+        if Path( base_file ).exists():
+            self.__base_files.append( base_file )
+        else:
+            raise FileNotFoundError( base_file )
+        return self
+
+    def add_submission_file( self, submission_file: PathType ):
+        if Path( submission_file ).exists():
+            self.__submission_files.append( submission_file )
+        else:
+            raise FileNotFoundError( submission_file )
+        return self
+
+    def base_files( self ) -> Iterator[ PathType ]:
+        return iter( self.__base_files )
+
+    def submission_files( self ) -> Iterator[ PathType ]:
+        return iter( self.__submission_files )
+
+
