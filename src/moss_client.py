@@ -121,3 +121,12 @@ class PathBasedParams( MossParams ):
         return iter( self.__submission_files )
 
 
+if __name__ == '__main__':
+    test_params_full = PathBasedParams()            \
+        .set_comment('test sample')                 \
+        .set_language(MossLanguage.PYTHON)          \
+        .set_experimental(True)                     \
+        .add_base_file( '../README.md' )            \
+        .add_submission_file('./moss_client.py')
+
+    print( test_params_full )
