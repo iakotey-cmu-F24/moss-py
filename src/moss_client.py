@@ -102,20 +102,28 @@ class PathBasedParams( MossParams ):
         self.__submission_files: list[ Path ] = []
 
     def add_base_file( self, base_file: PathType ):
+        ''' Add a base file to the class
+            Ensures file is a valid file before adding.
+            Raises FileNotFoundError if base_file is non-existent,
+            and ValueError if file is base_file a file'''
         if not ( base_path := Path( base_file ) ).exists():
             raise FileNotFoundError( base_file )
         if not base_path.is_file():
             raise ValueError( f'{base_file} is not a file' )
-        
+
         self.__base_files.append( base_path )
         return self
 
     def add_submission_file( self, submission_file: PathType ):
+        ''' Add a submission file to the class
+            Ensures file is a valid file before adding.
+            Raises FileNotFoundError if base_file is non-existent,
+            and ValueError if file is base_file a file'''
         if not ( submission_path := Path( submission_file ) ).exists():
             raise FileNotFoundError( submission_file )
         if not submission_path.is_file():
             raise ValueError( f'{submission_file} is not a file' )
-        
+
         self.__base_files.append( submission_path )
         return self
 
