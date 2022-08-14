@@ -80,11 +80,11 @@ class MossParams( ABC ):
                f' {" ".join((str(file) for file in self.submission_files()))}'
 
     @abstractmethod
-    def base_files( self ) -> Iterator[ PathType ]:
+    def base_files( self ) -> Iterator[ Path ]:
         pass
 
     @abstractmethod
-    def submission_files( self ) -> Iterator[ PathType ]:
+    def submission_files( self ) -> Iterator[ Path ]:
         pass
 
 
@@ -97,12 +97,12 @@ class PathBasedParams( MossParams ):
 
     def __init__( self ) -> None:
         super().__init__()
-        self.__base_files: list[ PathType ] = []
-        self.__submission_files: list[ PathType ] = []
+        self.__base_files: list[ Path ] = []
+        self.__submission_files: list[ Path ] = []
 
     def add_base_file( self, base_file: PathType ):
-        if Path( base_file ).exists():
-            self.__base_files.append( base_file )
+        if (base_path := Path( base_file )).exists():
+            self.__base_files.append( base_path )
         else:
             raise FileNotFoundError( base_file )
         return self
@@ -114,10 +114,10 @@ class PathBasedParams( MossParams ):
             raise FileNotFoundError( submission_file )
         return self
 
-    def base_files( self ) -> Iterator[ PathType ]:
+    def base_files( self ) -> Iterator[ Path ]:
         return iter( self.__base_files )
 
-    def submission_files( self ) -> Iterator[ PathType ]:
+    def submission_files( self ) -> Iterator[ Path ]:
         return iter( self.__submission_files )
 
 
