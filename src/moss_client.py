@@ -4,6 +4,7 @@ from doctest import testfile
 from enum import Enum
 from pathlib import Path
 from typing import Iterator
+from itertools import chain
 
 # ! Unnecessary once Python 3.11 is released
 # ? `pip install typing-extensions` for now
@@ -121,12 +122,45 @@ class PathBasedParams( MossParams ):
         return iter( self.__submission_files )
 
 
+class GlobBasedParams( MossParams ):
+
+    def __init__( self ) -> None:
+        super().__init__()
+        self.__base_files: list[ str ] = []
+        self.__submission_files: list[ str ] = []
+
+    def add_base_file( self, base_file: str ):
+        self.__base_files.append( base_file )
+        return self
+
+    def add_submission_file( self, submission_file: str ):
+        self.__submission_files.append( submission_file )
+        return self
+
+    def base_files( self ) -> Iterator[ Path ]:
+        return chain( *( Path( Path.cwd() ).glob( glob ) for glob in self.__base_files ) )
+
+    def submission_files( self ) -> Iterator[ Path ]:
+        return chain( *( Path( Path.cwd() ).glob( glob ) for glob in self.__submission_files ) )
+
+
 if __name__ == '__main__':
     test_params_full = PathBasedParams()            \
         .set_comment('test sample')                 \
         .set_language(MossLanguage.PYTHON)          \
         .set_experimental(True)                     \
         .add_base_file( '../README.md' )            \
+        .add_base_file( '../LICENSE' )            \
         .add_submission_file('./moss_client.py')
 
     print( test_params_full )
+
+
+    test_params_glob = GlobBasedParams()            \
+        .set_comment('test sample glob')            \
+        .set_language(MossLanguage.JAVA)            \
+        .set_experimental(True)                     \
+        .add_base_file( '../*' )            \
+        .add_submission_file('~/Desktop/*')
+
+    print( test_params_glob )
