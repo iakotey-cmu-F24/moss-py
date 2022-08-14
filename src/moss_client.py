@@ -102,17 +102,21 @@ class PathBasedParams( MossParams ):
         self.__submission_files: list[ Path ] = []
 
     def add_base_file( self, base_file: PathType ):
-        if (base_path := Path( base_file )).exists():
-            self.__base_files.append( base_path )
-        else:
+        if not ( base_path := Path( base_file ) ).exists():
             raise FileNotFoundError( base_file )
+        if not base_path.is_file():
+            raise ValueError( f'{base_file} is not a file' )
+        
+        self.__base_files.append( base_path )
         return self
 
     def add_submission_file( self, submission_file: PathType ):
-        if Path( submission_file ).exists():
-            self.__submission_files.append( submission_file )
-        else:
+        if not ( submission_path := Path( submission_file ) ).exists():
             raise FileNotFoundError( submission_file )
+        if not submission_path.is_file():
+            raise ValueError( f'{submission_file} is not a file' )
+        
+        self.__base_files.append( submission_path )
         return self
 
     def base_files( self ) -> Iterator[ Path ]:
