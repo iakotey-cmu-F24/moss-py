@@ -2,16 +2,18 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from doctest import testfile
 from enum import Enum
+from glob import iglob
 from pathlib import Path
 from typing import Iterator
 from itertools import chain
+from os import path, PathLike
 
 # ! Unnecessary once Python 3.11 is released
 # ? `pip install typing-extensions` for now
 from typing_extensions import Self
 
 
-PathType = Path | str
+PathType = str | PathLike
 
 
 class MossLanguage( str, Enum ):
@@ -74,11 +76,11 @@ class MossParams( ABC ):
         return self
 
     def __str__( self ):
-        return f'moss -c {self.__comment} -l {self.__language}'                 \
-               f' -m {self.__max_ignore_threshold} -n {self.__match_number}'    \
-               f'{" -x" if self.__experimental_mode else ""}'                                    \
-               f' {" ".join(("-b " + str(file) for file in self.base_files()))}'        \
-               f' {" ".join((str(file) for file in self.submission_files()))}'
+    def _expand_file( self, file: PathType ) -> str:
+        return path.expanduser( path.expandvars( file ) )
+
+    def _resolve_file( self, file: PathType ) -> str:
+        return path.abspath( self._expand_file( file ) )
 
     @abstractmethod
     def base_files( self ) -> Iterator[ Path ]:
@@ -98,17 +100,17 @@ class PathBasedParams( MossParams ):
 
     def __init__( self ) -> None:
         super().__init__()
-        self.__base_files: list[ Path ] = []
-        self.__submission_files: list[ Path ] = []
+        self.__base_files: list[ PathType ] = []
+        self.__submission_files: list[ PathType ] = []
 
     def add_base_file( self, base_file: PathType ):
         ''' Add a base file to the class
             Ensures file is a valid file before adding.
             Raises FileNotFoundError if base_file is non-existent,
             and ValueError if file is base_file a file'''
-        if not ( base_path := Path( base_file ) ).exists():
+        if not path.exists( base_path := self._resolve_file( base_file ) ):
             raise FileNotFoundError( base_file )
-        if not base_path.is_file():
+        if not path.isfile( base_path ):
             raise ValueError( f'{base_file} is not a file' )
 
         self.__base_files.append( base_path )
@@ -119,18 +121,18 @@ class PathBasedParams( MossParams ):
             Ensures file is a valid file before adding.
             Raises FileNotFoundError if base_file is non-existent,
             and ValueError if file is base_file a file'''
-        if not ( submission_path := Path( submission_file ) ).exists():
+        if not path.exists( submission_path := self._resolve_file( submission_file ) ):
             raise FileNotFoundError( submission_file )
-        if not submission_path.is_file():
+        if not path.isfile( submission_path ):
             raise ValueError( f'{submission_file} is not a file' )
 
         self.__base_files.append( submission_path )
         return self
 
-    def base_files( self ) -> Iterator[ Path ]:
+    def base_files( self ) -> Iterator[ PathType ]:
         return iter( self.__base_files )
 
-    def submission_files( self ) -> Iterator[ Path ]:
+    def submission_files( self ) -> Iterator[ PathType ]:
         return iter( self.__submission_files )
 
 
@@ -142,18 +144,22 @@ class GlobBasedParams( MossParams ):
         self.__submission_files: list[ str ] = []
 
     def add_base_file( self, base_file: str ):
-        self.__base_files.append( base_file )
+        self.__base_files.append( self._expand_file( base_file ) )
         return self
 
     def add_submission_file( self, submission_file: str ):
-        self.__submission_files.append( submission_file )
+        self.__submission_files.append( self._expand_file( submission_file ) )
         return self
 
-    def base_files( self ) -> Iterator[ Path ]:
-        return chain( *( Path( Path.cwd() ).glob( glob ) for glob in self.__base_files ) )
+    def base_files( self ) -> Iterator[ PathType ]:
+        return filter(
+            path.isfile, chain( *( ( iglob( sub_glob, recursive=True ) for sub_glob in self.__base_files ) ) )
+        )
 
-    def submission_files( self ) -> Iterator[ Path ]:
-        return chain( *( Path( Path.cwd() ).glob( glob ) for glob in self.__submission_files ) )
+    def submission_files( self ) -> Iterator[ PathType ]:
+        return filter(
+            path.isfile, chain( *( ( iglob( sub_glob, recursive=True ) for sub_glob in self.__submission_files ) ) )
+        )
 
 
 if __name__ == '__main__':
