@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from doctest import testfile
 from enum import Enum
 from glob import iglob
 from pathlib import Path
 from typing import Iterator
 from itertools import chain
+from dataclasses import dataclass, field
+
 from os import path, PathLike
 
 # ! Unnecessary once Python 3.11 is released
@@ -45,37 +46,43 @@ class MossLanguage( str, Enum ):
     PLSQL = 'plsql'
 
 
+@dataclass( init=True, repr=True )
 class MossParams( ABC ):
 
-    ''' Abstract class representing a moss parameter. 
-        Allows the user to configure Moss parameters and submit queries
-        Implements most shared behavior expected of subclasses
-    '''
+    '''Class representing configuration options used by the moss'''
+    user_id: str = field( init=True )
+    server: str = field( init=True, default='moss.stanford.edu' )
+    port: str = field( init=True, default='7690' )
 
-    def __init__( self ) -> None:
-        super().__init__()
-        self.__comment: str = str( datetime.today() )
-        self.__experimental_mode: bool = False
-        self.__language: MossLanguage = MossLanguage.C
-        self.__max_ignore_threshold = 10
-        self.__match_number = 250
+    comment: str = field( init=True, default_factory=lambda: str( datetime.today() ) )
+    language: MossLanguage = field( init=True, default=MossLanguage.C )
+
+    use_experimental_mode: bool = field( init=True, kw_only=True, default=False )
+    max_matches_displayed: int = field( init=True, kw_only=True, default=250 )
+    max_ignore_threshold: int = field( init=True, kw_only=True, default=10 )
 
     def set_language( self, language: MossLanguage ) -> Self:
         '''Set the language (-l) parameter to be used in the MOSS query'''
-        self.__language = language
+        self.language = language
         return self
 
     def set_experimental( self, experimental_flag: bool ) -> Self:
         '''Set the experimental flag (-x)'''
-        self.__experimental_mode = experimental_flag
+        self.use_experimental_mode = experimental_flag
         return self
 
     def set_comment( self, comment: str ) -> Self:
         '''Set the comment (-c) string to be used in the MOSS query'''
-        self.__comment = comment
+        self.comment = comment
         return self
 
     def __str__( self ):
+        return f'moss -c "{self.comment}" -l {self.language}'                 \
+               f' -m {self.max_ignore_threshold} -n {self.max_matches_displayed}'    \
+               f'{" -x" if self.use_experimental_mode else ""}'                                    \
+               f''' {" ".join(("-b " + f'"{file}"' for file in self.base_files()))}'''        \
+               f''' {" ".join((f'"{file}"' for file in self.submission_files()))}'''
+
     def _expand_file( self, file: PathType ) -> str:
         return path.expanduser( path.expandvars( file ) )
 
@@ -98,8 +105,8 @@ class PathBasedParams( MossParams ):
         of file paths passed
     '''
 
-    def __init__( self ) -> None:
-        super().__init__()
+    def __init__( self, user_id ) -> None:
+        super().__init__( user_id )
         self.__base_files: list[ PathType ] = []
         self.__submission_files: list[ PathType ] = []
 
@@ -138,8 +145,8 @@ class PathBasedParams( MossParams ):
 
 class GlobBasedParams( MossParams ):
 
-    def __init__( self ) -> None:
-        super().__init__()
+    def __init__( self, user_id ) -> None:
+        super().__init__( user_id )
         self.__base_files: list[ str ] = []
         self.__submission_files: list[ str ] = []
 
@@ -163,22 +170,23 @@ class GlobBasedParams( MossParams ):
 
 
 if __name__ == '__main__':
-    test_params_full = PathBasedParams()            \
-        .set_comment('test sample')                 \
-        .set_language(MossLanguage.PYTHON)          \
-        .set_experimental(True)                     \
-        .add_base_file( '../README.md' )            \
-        .add_base_file( '../LICENSE' )            \
-        .add_submission_file('./moss_client.py')
+    test_params_full = PathBasedParams(12345)           \
+        .set_comment('test sample')                     \
+        .set_language(MossLanguage.PYTHON)              \
+        .set_experimental(True)                         \
+        .add_base_file( '../../README.md' )             \
+        .add_base_file( '../../LICENSE' )               \
+        .add_submission_file('./config.py')             \
+        .add_submission_file('~/.bash_history')
 
     print( test_params_full )
 
 
-    test_params_glob = GlobBasedParams()            \
+    test_params_glob = GlobBasedParams(12345)            \
         .set_comment('test sample glob')            \
         .set_language(MossLanguage.JAVA)            \
         .set_experimental(True)                     \
-        .add_base_file( '../*' )            \
-        .add_submission_file('~/Desktop/*')
+        .add_base_file( '~/../ian/Desktop/*.pdf' )            \
+        .add_submission_file('~/Desktop/*.pdf')
 
-    print( test_params_glob )
+    print( repr( test_params_glob ) )
