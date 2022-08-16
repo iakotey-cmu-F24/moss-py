@@ -208,15 +208,18 @@ class MossConfig():
             )
         )
 
+    @classmethod
+    def default( cls, user_id: str ):
+        """
+        returns a default version of the class
+        
+        Args:
+          user_id (str): The user ID for moss.
         
         Returns:
-          The string representation of the object.
+          A default class instance.
         """
-        return f'moss -c "{self.comment}" -l {self.language}'                 \
-               f' -m {self.max_ignore_threshold} -n {self.max_matches_displayed}'    \
-               f'{" -x" if self.use_experimental_mode else ""}'                                    \
-               f''' {" ".join(("-b " + f'"{file}"' for file in self.base_files()))}'''        \
-               f''' {" ".join((f'"{file}"' for file in self.submission_files()))}'''
+        return cls( user_id )
 
     def _expand_file( self, file: PathType ) -> str:
         """
