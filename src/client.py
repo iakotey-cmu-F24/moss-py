@@ -29,7 +29,7 @@ class MossClient:
         self.config = MossConfig( _user_id )
         self._socket.connect( ( self.config.server, self.config.port ) )
 
-    def send(self) -> str:
+    def send( self ) -> str:
         """
         It sends the headers, uploads the base files,
         uploads the submission files, queries the server,
@@ -43,6 +43,13 @@ class MossClient:
         self._upload_submission_files()
         self._query_server()
         return self._read_server_response_str()
+
+    @classmethod
+    def from_config( cls, config: MossConfig ):
+        self = cls( config.user_id )
+        self.config = config
+        return self
+
     def _send_file( self, filename: str, file_index: int ):
         """
         It sends a file to the server
