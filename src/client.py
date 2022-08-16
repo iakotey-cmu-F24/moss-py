@@ -15,8 +15,6 @@ class MossClient:
         init=False, repr=False, default_factory=lambda: socket( family=AF_INET, type=SOCK_STREAM )
     )
 
-
-
     def __post_init__( self, _user_id ):
         """
         The function takes a user_id as an argument, and then creates a MossConfig object with that
@@ -42,7 +40,10 @@ class MossClient:
         self._upload_base_files()
         self._upload_submission_files()
         self._query_server()
-        return self._read_server_response_str()
+
+        url = self._read_server_response_str()
+
+        return url
 
     @classmethod
     def from_config( cls, config: MossConfig ):
@@ -60,9 +61,17 @@ class MossClient:
         """
         with open( filename, mode="rb" ) as f:
             contents = f.read()
-            self._socket.sendall( f"file {file_index} {self.config.language} {len(contents)} {filename}".encode() )
+            clean_filename = filename.replace( '\\', '/' ).replace( ' ', '_' )
+
+            print( f"Uploading {filename}...", end='' )
+
+            self._socket.sendall(
+                f"file {file_index} {self.config.language} {len(contents)} file_{file_index}".encode()
+            )
 
             self._socket.sendall( contents )
+
+            print( "done.\n" )
 
     def _send_headers( self ):
         """
@@ -102,9 +111,10 @@ class MossClient:
         Upload the submission files to the server.
         """
         for index, file in enumerate( self.config.submission_files(), start=1 ):
+            print( f'file #{index}' )
             self._send_file( file, index )
 
-    def _read_server_response_str(self, buf_size: int = 1024) -> str: # 1 Kb ought to be enough, right?
+    def _read_server_response_str( self, buf_size: int = 1024 ) -> str:               # 1 Kb ought to be enough, right?
         """
         Reads the server's response and returns it as a string.
         
@@ -116,23 +126,34 @@ class MossClient:
         """
         return self._socket.recv( buf_size ).decode().strip()
 
-    def _query_server(self):
+    def _query_server( self ):
         """
         Send a query to the server.
         """
         self._socket.sendall( f"query 0 {self.config.comment}\n".encode() )
-
+        print( "Query submitted.  Waiting for the server's response.\n" )
 
     def __enter__( self ):
         return self
 
     def __exit__( self, exc_type, exc_value, exc_traceback ):
-        self._socket.close()
+        del self
 
     def __del__( self ):
+        print( 'terminating connection' )
+        self._socket.sendall( "end\n".encode() )
         self._socket.close()
 
 
 if __name__ == '__main__':
-    test_client = MossClient( '12345' )
-    print( test_client )
+    from config import MossLanguage
+    test_params = MossConfig("430246052")                  \
+        .set_comment('test sample glob')                        \
+        .set_language(MossLanguage.PYTHON)                        \
+        .set_experimental(False)                                 \
+        .set_directory_mode(False)                               \
+        .add_submission_file('~/Desktop/Moss-Demo/demo_py/*.py', glob=True)
+
+    with MossClient.from_config( test_params ) as test_client:
+        # print( str(test_client.config) )
+        print( test_client.send() )
