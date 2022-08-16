@@ -50,7 +50,7 @@ class MossConfig():
     '''Class representing configuration options used by the moss'''
     user_id: str = field( init=True )
     server: str = field( init=True, default='moss.stanford.edu' )
-    port: str = field( init=True, default='7690' )
+    port: int = field( init=True, default=7690 )
 
     comment: str = field( init=True, default_factory=lambda: str( datetime.today() ) )
     language: MossLanguage = field( init=True, default=MossLanguage.C )
@@ -245,33 +245,19 @@ class MossConfig():
         """
         return path.abspath( self._expand_file( file ) )
 
-    def base_files( self ) -> Iterator[ PathType ]:
+    def __str__( self ):
         """
-        > `base_files` returns an iterator of the assignment's base files
-
-        Returns: An iterator over all base files
+        It returns a string that is the command line arguments for the moss program
+        
+        Returns:
+          The string representation of the object.
         """
-        return filter(
-            path.isfile,
-            chain(
-                *( ( iglob( base_glob, recursive=True ) for base_glob in self.__base_globs ) ),
-                iter( self.__base_files )
-            )
-        )
-
-    def submission_files( self ) -> Iterator[ PathType ]:
-        """
-        > `submission_files` returns an iterator of the files that should be submitted for this assignment
-
-        Returns: An iterator over all base files
-        """
-        return filter(
-            path.isfile,
-            chain(
-                *( ( iglob( sub_glob, recursive=True ) for sub_glob in self.__submission_globs ) ),
-                iter( self.__submission_files )
-            )
-        )
+        return f'moss -c "{self.comment}" -l {self.language}'                 \
+               f' -m {self.max_ignore_threshold} -n {self.max_matches_displayed}'    \
+               f'{" -d" if self.use_directory_mode else ""}'                                    \
+               f'{" -x" if self.use_experimental_mode else ""}'                                    \
+               f''' {" ".join(("-b " + f'"{file}"' for file in self.base_files()))}'''        \
+               f''' {" ".join((f'"{file}"' for file in self.submission_files()))}'''
 
 
 if __name__ == '__main__':
