@@ -51,7 +51,7 @@ class MossClient:
             self._send_file( file, 0 )
 
     def _upload_submission_files( self ):
-        for index, file in enumerate( self.config.base_files(), start=1 ):
+        for index, file in enumerate( self.config.submission_files(), start=1 ):
             self._send_file( file, index )
 
     def _read_server_response_str(self, buf_size: int = 1024) -> str: # 1 Kb ought to be enough, right?
