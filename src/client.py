@@ -30,6 +30,13 @@ class MossClient:
         self._socket.connect( ( self.config.server, self.config.port ) )
 
     def _send_file( self, filename: str, file_index: int ):
+        """
+        It sends a file to the server
+        
+        Args:
+          filename (str): str - The name of the file to send
+          file_index (int): The index of the file in the list of files to be sent.
+        """
         with open( filename, mode="rb" ) as f:
             contents = f.read()
             self._socket.sendall( f"file {file_index} {self.config.language} {len(contents)} {filename}".encode() )
@@ -37,6 +44,20 @@ class MossClient:
             self._socket.sendall( contents )
 
     def _send_headers( self ):
+        """
+        The function sends the headers to the server.
+        Headers include:
+        1. user id (needed for authentication),
+        2. directory flag,
+        3. experimental flag,
+        4. number of matches to ignore,
+        5. number of results to show,
+        6. language,
+
+        Raises:
+            ValueError if language is unsupported
+        """
+
         self._socket.sendall( f"moss {self.config.user_id}\n".encode() )
         self._socket.sendall( f"directory {1 if self.config.use_directory_mode else 0}\n".encode() )
         self._socket.sendall( f"X {1 if self.config.use_experimental_mode else 0}\n".encode() )
@@ -49,17 +70,35 @@ class MossClient:
             raise ValueError( f"Unsupported language: {self.config.language}" )
 
     def _upload_base_files( self ):
+        """
+        Upload the base files to the remote server.
+        """
         for file in self.config.base_files():
             self._send_file( file, 0 )
 
     def _upload_submission_files( self ):
+        """
+        Upload the submission files to the server.
+        """
         for index, file in enumerate( self.config.submission_files(), start=1 ):
             self._send_file( file, index )
 
     def _read_server_response_str(self, buf_size: int = 1024) -> str: # 1 Kb ought to be enough, right?
+        """
+        Reads the server's response and returns it as a string.
+        
+        Args:
+          buf_size (int): int = 1024. Defaults to 1024
+        
+        Returns:
+          The response from the server.
+        """
         return self._socket.recv( buf_size ).decode().strip()
 
     def _query_server(self):
+        """
+        Send a query to the server.
+        """
         self._socket.sendall( f"query 0 {self.config.comment}\n".encode() )
 
 
