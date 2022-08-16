@@ -54,6 +54,7 @@ class MossConfig():
 
     comment: str = field( init=True, default_factory=lambda: str( datetime.today() ) )
     language: MossLanguage = field( init=True, default=MossLanguage.C )
+    use_directory_mode: bool = field( init=True, default=False )
 
     use_experimental_mode: bool = field( init=True, kw_only=True, default=False )
     max_matches_displayed: int = field( init=True, kw_only=True, default=250 )
@@ -89,6 +90,19 @@ class MossConfig():
           The object itself.
         # """
         self.use_experimental_mode = experimental_flag
+        return self
+
+    def set_directory_mode( self, directory_flag: bool ) -> Self:
+        """
+        `set_directory` sets the directory flag (-d)
+
+        Args:
+          directory_flag (bool): If set to True, the directory mode will be used.
+
+        Returns:
+          The object itself.
+        # """
+        self.use_directory_mode = directory_flag
         return self
 
     def set_comment( self, comment: str ) -> Self:
