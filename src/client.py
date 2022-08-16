@@ -8,12 +8,14 @@ from os import path
 class MossClient:
 
     config: MossConfig = field( init=False, repr=True )
-    _user_id: InitVar[ str ] = field( init=True, repr=False )
+    _user_id: InitVar[ str ] = field(
+        init=True, repr=False
+    )               # A variable that is only used in the `__post_init__` method.
     _socket: socket = field(
         init=False, repr=False, default_factory=lambda: socket( family=AF_INET, type=SOCK_STREAM )
     )
 
-    # A variable that is only used in the `__post_init__` method.
+
 
     def __post_init__( self, _user_id ):
         """
