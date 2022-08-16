@@ -1,4 +1,3 @@
-
 from dataclasses import InitVar, dataclass, field
 from socket import socket, AF_INET, SOCK_STREAM
 from config import MossConfig
@@ -26,7 +25,7 @@ class MossClient:
           _user_id: The user ID of the user who is submitting the files.
         """
         self.config = MossConfig( _user_id )
-        self._socket.connect( (self.config.server, self.config.port) )
+        self._socket.connect( ( self.config.server, self.config.port ) )
 
     def _send_file( self, filename: str, file_index: int ):
         with open( filename, mode="rb" ) as f:
@@ -44,15 +43,31 @@ class MossClient:
 
         self._socket.sendall( f"language {self.config.language}\n".encode() )
 
-        response = self._socket.recv(512) # * 512 bytes chosen arbitrarily
-        
-        if response.decode().strip().lower() == "no":
-            raise ValueError(f"Unsupported language: {self.config.language}")
+        if self._read_server_response_str().lower() == "no":
+            raise ValueError( f"Unsupported language: {self.config.language}" )
+
+    def _upload_base_files( self ):
+        for file in self.config.base_files():
+            self._send_file( file, 0 )
+
+    def _upload_submission_files( self ):
+        for index, file in enumerate( self.config.base_files(), start=1 ):
+            self._send_file( file, index )
+
+    def _read_server_response_str(self, buf_size: int = 1024) -> str: # 1 Kb ought to be enough, right?
+        return self._socket.recv( buf_size ).decode().strip()
+
+    def _query_server(self):
+        self._socket.sendall( f"query 0 {self.config.comment}\n".encode() )
+
 
     def __enter__( self ):
         return self
 
     def __exit__( self, exc_type, exc_value, exc_traceback ):
+        self._socket.close()
+
+    def __del__( self ):
         self._socket.close()
 
 
